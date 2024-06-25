@@ -23,7 +23,7 @@ def generate_report(df):
     
     # Display entire dataframe with filtering options
     st.header("Data Table")
-    st.write(df)
+    st.dataframe(df)
 
     # Generate interactive filterable views for categorical columns
     st.header("Filter Data")
@@ -35,17 +35,41 @@ def generate_report(df):
     
     # Display the filtered dataframe
     st.subheader("Filtered Data")
-    st.write(df)
+    st.dataframe(df)
+
+# Function to detect delimiter
+def detect_delimiter(file):
+    sample = file.read(2048).decode('utf-8')
+    file.seek(0)
+    delimiters = [',', ';', '\t', '|']
+    for delimiter in delimiters:
+        if delimiter in sample:
+            return delimiter
+    return ','  # default to comma if no delimiter is found
+
+# Function to read CSV with detected delimiter
+def read_csv(file):
+    delimiter = detect_delimiter(file)
+    try:
+        df = pd.read_csv(file, delimiter=delimiter)
+        return df, delimiter
+    except pd.errors.ParserError:
+        return None, None
 
 # Streamlit app layout
 st.sidebar.title("Upload CSV File")
 uploaded_file = st.sidebar.file_uploader("Choose a CSV file", type="csv")
 
 if uploaded_file is not None:
-    # Read the uploaded CSV file
-    df = pd.read_csv(uploaded_file)
+    df, delimiter = read_csv(uploaded_file)
     
-    # Generate the report
-    generate_report(df)
+    if df is not None:
+        st.success(f"File successfully read with delimiter '{delimiter}'")
+        # Show the first few rows for debugging
+        st.write(df.head())
+        # Generate the report
+        generate_report(df)
+    else:
+        st.error("The file could not be parsed. Please ensure it is a valid CSV file.")
 else:
     st.write("Please upload a CSV file to get started.")
