@@ -56,6 +56,27 @@ def read_csv(file):
     except pd.errors.ParserError:
         return None, None
 
+# Function to summarize the CSV file
+def summarize_csv(df):
+    summary = {}
+
+    # Basic statistics
+    summary['basic_stats'] = df.describe(include='all')
+
+    # Unique values and their counts
+    unique_counts = {col: df[col].nunique() for col in df.columns}
+    summary['unique_counts'] = unique_counts
+
+    # Identify columns with missing values
+    missing_values = df.isnull().sum().to_dict()
+    summary['missing_values'] = missing_values
+
+    # Column data types
+    dtypes = df.dtypes.apply(lambda x: x.name).to_dict()  # Convert to string for display
+    summary['dtypes'] = dtypes
+
+    return summary
+
 # Streamlit app layout
 st.sidebar.title("Upload CSV File")
 uploaded_file = st.sidebar.file_uploader("Choose a CSV file", type="csv")
@@ -65,10 +86,33 @@ if uploaded_file is not None:
     
     if df is not None:
         st.success(f"File successfully read with delimiter '{delimiter}'")
+        
         # Show the first few rows for debugging
         st.write(df.head())
+
         # Generate the report
         generate_report(df)
+
+        # Summarize the CSV file
+        st.header("CSV File Summary")
+        summary = summarize_csv(df)
+
+        # Display summary details in a readable format
+        st.subheader("Basic Statistics")
+        st.write(summary['basic_stats'])
+
+        st.subheader("Unique Counts")
+        unique_counts_df = pd.DataFrame.from_dict(summary['unique_counts'], orient='index', columns=['Unique Count'])
+        st.write(unique_counts_df)
+
+        st.subheader("Missing Values")
+        missing_values_df = pd.DataFrame.from_dict(summary['missing_values'], orient='index', columns=['Missing Values'])
+        st.write(missing_values_df)
+
+        st.subheader("Column Data Types")
+        dtypes_df = pd.DataFrame.from_dict(summary['dtypes'], orient='index', columns=['Data Type'])
+        st.write(dtypes_df)
+
     else:
         st.error("The file could not be parsed. Please ensure it is a valid CSV file.")
 else:
